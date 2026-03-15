@@ -968,7 +968,7 @@
       <p class="backup-note">
         データはブラウザに自動保存されます。<br>
         キャッシュ削除で消えることがあるため、定期的な保存をおすすめします。
-        <small>※ Chrome/Edge: 任意のフォルダに直接保存できます</small>
+        <small>※ Chrome/Edge: 保存先フォルダを選択できます。Safari/Firefox はダウンロードフォルダに保存されます。</small>
       </p>
       <div style="display:flex;flex-direction:column;gap:10px;">
         <button class="btn btn-primary" onclick="exportJSON()">
@@ -1403,14 +1403,35 @@ function renderChars() {
 }
 
 // ===== BACKUP =====
-function exportJSON() {
+async function exportJSON() {
   const data = { records, profile, exportedAt: new Date().toISOString(), version: 1 };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(data, null, 2);
+  const date = new Date().toISOString().slice(0, 10);
+  const fileName = `健康手帳_${date}.json`;
+
+  // File System Access API（Chrome/Edge）
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [{ description: 'JSONファイル', accept: { 'application/json': ['.json'] } }],
+      });
+      const writable = await handle.createWritable();
+      await writable.write(json);
+      await writable.close();
+      showToast('💾 保存しました');
+    } catch (e) {
+      if (e.name !== 'AbortError') showToast('⚠️ 保存に失敗しました');
+    }
+    return;
+  }
+
+  // フォールバック（Safari・Firefox など）
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0, 10);
   a.href = url;
-  a.download = `健康手帳_${date}.json`;
+  a.download = fileName;
   a.click();
   URL.revokeObjectURL(url);
   showToast('💾 保存しました');
