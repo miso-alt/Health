@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>わたしの健康手帳</title>
+<meta name="theme-color" content="#e8f0ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="健康手帳">
+<link id="appleIcon" rel="apple-touch-icon">
+<link id="manifestLink" rel="manifest">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;400;500;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --card: #ffffff;
+    --card2: #f7f9ff;
+    --border: #dde6f7;
+    --accent: #7aa2e3;
+    --accent2: #e88fa3;
+    --accent3: #82c9a5;
+    --accent4: #f0b060;
+    --text: #3a4a6b;
+    --text-sub: #7b8faf;
+    --text-light: #aab8d4;
+    --tab-active: #7aa2e3;
+    --shadow: 0 4px 20px rgba(100,130,200,0.10);
+    --shadow2: 0 2px 8px rgba(100,130,200,0.08);
+    --radius: 18px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  /* Header */
+  .app-header {
+    background: linear-gradient(135deg, #e8f0ff 0%, #f5e8ff 100%);
+    padding: 20px 20px 0;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .app-header h1 {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1.5rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .app-header p {
+    font-size: 0.78rem;
+    color: var(--text-sub);
+    margin-bottom: 14px;
+  }
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border: none;
+    background: transparent;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-sub);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  /* Main content */
+  .main {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px 16px 0;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .card-title {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 1rem;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Form elements */
+  .field-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .field-group.single { grid-template-columns: 1fr; }
+  .field-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .field-wrap label {
+    font-size: 0.75rem;
+    color: var(--text-sub);
+    font-weight: 500;
+  }
+  .field-wrap input[type="text"],
+  .field-wrap input[type="number"],
+  .field-wrap input[type="date"],
+  .field-wrap input[type="datetime-local"],
+  .field-wrap textarea,
+  .field-wrap select {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    font-family: 'Noto Sans JP', sans-serif;
+    color: var(--text);
+    background: var(--card2);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .field-wrap input:focus,
+  .field-wrap textarea:focus,
+  .field-wrap select:focus {
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .field-wrap textarea {
+    resize: vertical;
+    min-height: 72px;
+  }
+  .unit {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    margin-left: 2px;
+  }
+  .label-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Section toggle */
+  .section-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .section-toggle span {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text-sub);
+    flex: 1;
+  }
+  .toggle-arrow {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    transition: transform 0.2s;
+  }
+  .toggle-arrow.open { transform: rotate(180deg); }
+  .section-body { display: none; }
+  .section-body.open { display: block; }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+  }
+
+  /* Buttons */
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 13px 20px;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.18s;
+    width: 100%;
+    font-weight: 700;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #7aa2e3, #9ec0f5);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(122,162,227,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(122,162,227,0.45); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-danger {
+    background: linear-gradient(135deg, #e88fa3, #f0a0b5);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(232,143,163,0.35);
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1.5px solid var(--border);
+    color: var(--accent);
+    font-size: 0.85rem;
+    padding: 10px 16px;
+  }
+  .btn-outline:hover { background: var(--card2); }
+
+  /* Date time row */
+  .datetime-row {
+    margin-bottom: 14px;
+  }
+
+  /* Records tab */
+  .record-filter {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .filter-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    font-size: 0.78rem;
+    cursor: pointer;
+    background: var(--card);
+    color: var(--text-sub);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    transition: all 0.15s;
+  }
+  .filter-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Chart container */
+  .chart-wrap {
+    position: relative;
+    height: 200px;
+    margin-bottom: 10px;
+  }
+
+  /* Record list */
+  .record-list { list-style: none; }
+  .record-item {
+    background: var(--card2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .record-item-date {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 6px;
+  }
+  .record-item-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .value-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 0.78rem;
+    color: var(--text);
+  }
+  .value-tag .vk { color: var(--text-sub); }
+  .value-tag .vv { font-weight: 600; }
+  .record-item-note {
+    margin-top: 7px;
+    font-size: 0.8rem;
+    color: var(--text-sub);
+    line-height: 1.5;
+    padding: 6px 8px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .record-delete {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .record-delete:hover { color: var(--accent2); background: #fff0f4; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-light);
+    font-size: 0.85rem;
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* Backup tab */
+  .backup-note {
+    font-size: 0.82rem;
+    color: var(--text-sub);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .backup-note small {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    display: block;
+    margin-top: 6px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-size: 0.85rem;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Characteristics list */
+  .char-list { list-style: none; margin-top: 8px; }
+  .char-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--card2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+    font-size: 0.83rem;
+    color: var(--text);
+  }
+  .char-item .char-text { flex: 1; line-height: 1.5; }
+  .char-remove {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0 4px;
+    transition: color 0.15s;
+  }
+  .char-remove:hover { color: var(--accent2); }
+  .char-add-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .char-add-row input {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--card2);
+    outline: none;
+  }
+  .char-add-row input:focus { border-color: var(--accent); background: #fff; }
+  .btn-add-char {
+    background: var(--accent3);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    font-family: 'Zen Maru Gothic', sans-serif;
+    cursor: pointer;
+    font-weight: 700;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .btn-add-char:hover { opacity: 0.85; }
+
+  /* Stats summary */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .stat-box {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .stat-box .sv { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+  .stat-box .sk { font-size: 0.7rem; color: var(--text-sub); margin-top: 2px; }
+
+  /* Chart select */
+  .chart-select-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .chart-select-row label { font-size: 0.8rem; color: var(--text-sub); white-space: nowrap; }
+  .chart-select-row select {
+    flex: 1;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--card2);
+    outline: none;
+  }
+
+  .no-chart {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-light);
+    font-size: 0.82rem;
+    background: var(--card2);
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+  }
+
+  /* profile section in 登録 tab */
+  .profile-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .profile-tag {
+    background: linear-gradient(135deg, #e8f2ff, #f5eeff);
+    border: 1px solid #d0dfff;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    color: var(--accent);
+  }
+
+  /* file input hidden */
+  #fileInput { display: none; }
+
+  /* Fitness custom add row */
+  .fitness-custom-add {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 1.2fr auto;
+    gap: 6px;
+    align-items: center;
+  }
+  .fitness-custom-add input {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 0.82rem;
+    color: var(--text);
+    background: var(--card2);
+    outline: none;
+    width: 100%;
+  }
+  .fitness-custom-add input:focus { border-color: var(--accent); background: #fff; }
+  .fit-custom-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 5px;
+    font-size: 0.82rem;
+  }
+  .fit-custom-item .fck { color: var(--text-sub); flex: 1; }
+  .fit-custom-item .fcv { font-weight: 600; color: var(--accent); }
+  .fit-custom-item button {
+    background: none; border: none; color: var(--text-light);
+    cursor: pointer; font-size: 0.82rem; padding: 0 4px;
+    transition: color 0.15s;
+  }
+  .fit-custom-item button:hover { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>🌿 わたしの健康手帳</h1>
+  <p>自分だけの健康データを記録・管理</p>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('input')">✏️ 登録</button>
+    <button class="tab-btn" onclick="switchTab('records')">📊 記録</button>
+    <button class="tab-btn" onclick="switchTab('profile')">🧬 プロフィール</button>
+    <button class="tab-btn" onclick="switchTab('backup')">💾 バックアップ</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ======= 登録タブ ======= -->
+  <div id="tab-input" class="tab-panel active">
+    <div class="card">
+      <div class="card-title">📅 記録日時</div>
+      <div class="datetime-row">
+        <div class="field-wrap">
+          <label>日時</label>
+          <input type="datetime-local" id="inputDate">
+        </div>
+      </div>
+
+      <!-- 基本測定値 -->
+      <div class="card-title" style="margin-top:4px;">⚖️ 基本測定値</div>
+      <div class="field-group">
+        <div class="field-wrap">
+          <div class="label-row"><label>体重</label><span class="unit">kg</span></div>
+          <input type="number" id="f_weight" placeholder="例: 65.5" step="0.1">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>体脂肪率</label><span class="unit">%</span></div>
+          <input type="number" id="f_bodyFat" placeholder="例: 22.0" step="0.1">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>ウエスト</label><span class="unit">cm</span></div>
+          <input type="number" id="f_waist" placeholder="例: 78" step="0.1">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>身長</label><span class="unit">cm</span></div>
+          <input type="number" id="f_height" placeholder="例: 170" step="0.1">
+        </div>
+      </div>
+
+      <!-- 血圧・血糖 -->
+      <div class="divider"></div>
+      <div class="card-title" style="margin-top:0;">🩸 血圧・血糖</div>
+      <div class="field-group">
+        <div class="field-wrap">
+          <div class="label-row"><label>収縮期血圧</label><span class="unit">mmHg</span></div>
+          <input type="number" id="f_bpSys" placeholder="例: 120">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>拡張期血圧</label><span class="unit">mmHg</span></div>
+          <input type="number" id="f_bpDia" placeholder="例: 80">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>血糖値</label><span class="unit">mg/dL</span></div>
+          <input type="number" id="f_glucose" placeholder="例: 95">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>HbA1c</label><span class="unit">%</span></div>
+          <input type="number" id="f_hba1c" placeholder="例: 5.5" step="0.1">
+        </div>
+      </div>
+
+      <!-- 腎機能 -->
+      <div class="divider"></div>
+      <div class="section-toggle" onclick="toggleSection('kidney')">
+        <span>🫘 腎機能</span>
+        <span class="toggle-arrow" id="arr-kidney">▼</span>
+      </div>
+      <div class="section-body" id="sec-kidney">
+        <div class="field-group">
+          <div class="field-wrap">
+            <div class="label-row"><label>クレアチニン</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_creatinine" placeholder="例: 0.85" step="0.01">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>eGFR</label><span class="unit">mL/分/1.73m²</span></div>
+            <input type="number" id="f_egfr" placeholder="例: 75" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>尿酸値</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_uricAcid" placeholder="例: 5.5" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>BUN</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_bun" placeholder="例: 15" step="0.1">
+          </div>
+        </div>
+      </div>
+
+      <!-- コレステロール・肝機能 -->
+      <div class="divider"></div>
+      <div class="section-toggle" onclick="toggleSection('liver')">
+        <span>🧪 脂質・肝機能</span>
+        <span class="toggle-arrow" id="arr-liver">▼</span>
+      </div>
+      <div class="section-body" id="sec-liver">
+        <div class="field-group">
+          <div class="field-wrap">
+            <div class="label-row"><label>総コレステロール</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_cholTotal" placeholder="例: 190">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>LDLコレステロール</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_ldl" placeholder="例: 110">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>HDLコレステロール</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_hdl" placeholder="例: 60">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>中性脂肪</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_trig" placeholder="例: 100">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>AST(GOT)</label><span class="unit">U/L</span></div>
+            <input type="number" id="f_ast" placeholder="例: 25">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>ALT(GPT)</label><span class="unit">U/L</span></div>
+            <input type="number" id="f_alt" placeholder="例: 20">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>γ-GTP</label><span class="unit">U/L</span></div>
+            <input type="number" id="f_ggtp" placeholder="例: 30">
+          </div>
+        </div>
+      </div>
+
+      <!-- 視力・眼科 -->
+      <div class="divider"></div>
+      <div class="section-toggle" onclick="toggleSection('eye')">
+        <span>👁️ 視力・眼科</span>
+        <span class="toggle-arrow" id="arr-eye">▼</span>
+      </div>
+      <div class="section-body" id="sec-eye">
+        <div class="field-group">
+          <div class="field-wrap">
+            <div class="label-row"><label>視力（右）</label></div>
+            <input type="number" id="f_visR" placeholder="例: 0.8" step="0.01">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>視力（左）</label></div>
+            <input type="number" id="f_visL" placeholder="例: 0.7" step="0.01">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>眼圧（右）</label><span class="unit">mmHg</span></div>
+            <input type="number" id="f_iopR" placeholder="例: 14" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>眼圧（左）</label><span class="unit">mmHg</span></div>
+            <input type="number" id="f_iopL" placeholder="例: 14" step="0.1">
+          </div>
+        </div>
+        <div class="field-group" style="margin-top:4px;">
+          <div class="field-wrap">
+            <div class="label-row"><label>メガネ度数（右）</label><span class="unit">D</span></div>
+            <input type="number" id="f_glassR" placeholder="例: -2.50" step="0.25">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>メガネ度数（左）</label><span class="unit">D</span></div>
+            <input type="number" id="f_glassL" placeholder="例: -2.25" step="0.25">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>コンタクト（右）</label><span class="unit">D</span></div>
+            <input type="number" id="f_contactR" placeholder="例: -2.00" step="0.25">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>コンタクト（左）</label><span class="unit">D</span></div>
+            <input type="number" id="f_contactL" placeholder="例: -2.00" step="0.25">
+          </div>
+        </div>
+      </div>
+
+      <!-- 体力 -->
+      <div class="divider"></div>
+      <div class="section-toggle" onclick="toggleSection('fitness')">
+        <span>💪 体力測定</span>
+        <span class="toggle-arrow" id="arr-fitness">▼</span>
+      </div>
+      <div class="section-body" id="sec-fitness">
+        <div class="field-group">
+          <div class="field-wrap">
+            <div class="label-row"><label>握力（右）</label><span class="unit">kg</span></div>
+            <input type="number" id="f_gripR" placeholder="例: 42" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>握力（左）</label><span class="unit">kg</span></div>
+            <input type="number" id="f_gripL" placeholder="例: 40" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>VO2max</label><span class="unit">mL/kg/分</span></div>
+            <input type="number" id="f_vo2max" placeholder="例: 45.0" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>安静時心拍数</label><span class="unit">bpm</span></div>
+            <input type="number" id="f_restHR" placeholder="例: 60">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>最大心拍数</label><span class="unit">bpm</span></div>
+            <input type="number" id="f_maxHR" placeholder="例: 180">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>1日平均歩数</label><span class="unit">歩</span></div>
+            <input type="number" id="f_steps" placeholder="例: 8000">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>長座体前屈</label><span class="unit">cm</span></div>
+            <input type="number" id="f_sitReach" placeholder="例: 45" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>立ち幅跳び</label><span class="unit">cm</span></div>
+            <input type="number" id="f_standJump" placeholder="例: 170" step="1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>上体起こし</label><span class="unit">回/30秒</span></div>
+            <input type="number" id="f_sitUp" placeholder="例: 25">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>反復横跳び</label><span class="unit">回/20秒</span></div>
+            <input type="number" id="f_sideStep" placeholder="例: 50">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>6分間歩行</label><span class="unit">m</span></div>
+            <input type="number" id="f_walk6min" placeholder="例: 550">
+          </div>
+        </div>
+
+        <!-- カスタム体力項目 -->
+        <div style="margin-top:10px;">
+          <div style="font-size:0.78rem;color:var(--text-sub);margin-bottom:6px;">＋ カスタム体力項目</div>
+          <div id="fitCustomList" style="margin-bottom:6px;"></div>
+          <div class="fitness-custom-add">
+            <input type="text" id="fitCustomName" placeholder="項目名（例: プランク）">
+            <input type="number" id="fitCustomVal" placeholder="値" step="any">
+            <input type="text" id="fitCustomUnit" placeholder="単位（例: 秒）">
+            <button class="btn-add-char" onclick="addFitCustom()">＋</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- その他 -->
+      <div class="divider"></div>
+      <div class="section-toggle" onclick="toggleSection('other')">
+        <span>📋 その他の検査値</span>
+        <span class="toggle-arrow" id="arr-other">▼</span>
+      </div>
+      <div class="section-body" id="sec-other">
+        <div class="field-group">
+          <div class="field-wrap">
+            <div class="label-row"><label>赤血球数</label><span class="unit">万/μL</span></div>
+            <input type="number" id="f_rbc" placeholder="例: 450" step="1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>白血球数</label><span class="unit">/μL</span></div>
+            <input type="number" id="f_wbc" placeholder="例: 6000" step="1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>ヘモグロビン</label><span class="unit">g/dL</span></div>
+            <input type="number" id="f_hgb" placeholder="例: 14.5" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>血小板数</label><span class="unit">万/μL</span></div>
+            <input type="number" id="f_plt" placeholder="例: 20" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>TSH</label><span class="unit">μIU/mL</span></div>
+            <input type="number" id="f_tsh" placeholder="例: 2.0" step="0.01">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>フェリチン</label><span class="unit">ng/mL</span></div>
+            <input type="number" id="f_ferritin" placeholder="例: 50" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>ビタミンD</label><span class="unit">ng/mL</span></div>
+            <input type="number" id="f_vitD" placeholder="例: 30" step="0.1">
+          </div>
+          <div class="field-wrap">
+            <div class="label-row"><label>CRP</label><span class="unit">mg/dL</span></div>
+            <input type="number" id="f_crp" placeholder="例: 0.1" step="0.01">
+          </div>
+        </div>
+        <div class="field-group single">
+          <div class="field-wrap">
+            <div class="label-row"><label>カスタム項目（名前:値 の形式で記入）</label></div>
+            <input type="text" id="f_custom" placeholder="例: PSA:1.2、空腹時インスリン:5.0">
+          </div>
+        </div>
+      </div>
+
+      <!-- メモ -->
+      <div class="divider"></div>
+      <div class="field-group single" style="margin-top:4px;">
+        <div class="field-wrap">
+          <label>📝 メモ・体調など</label>
+          <textarea id="f_memo" placeholder="体調、気になること、食事内容など自由に記入..."></textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="saveRecord()">💾 この記録を保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= 記録タブ ======= -->
+  <div id="tab-records" class="tab-panel">
+    <div class="card">
+      <div class="card-title">📈 グラフで推移を確認</div>
+      <div class="chart-select-row">
+        <label>表示項目:</label>
+        <select id="chartFieldSelect" onchange="renderChart()"></select>
+      </div>
+      <div id="chartArea">
+        <div class="no-chart">データを登録するとグラフが表示されます</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗂️ 記録一覧</div>
+      <div class="record-filter" id="recordFilter">
+        <button class="filter-chip active" data-filter="all" onclick="setFilter('all', this)">すべて</button>
+        <button class="filter-chip" data-filter="body" onclick="setFilter('body', this)">体重・体型</button>
+        <button class="filter-chip" data-filter="blood" onclick="setFilter('blood', this)">血圧・血糖</button>
+        <button class="filter-chip" data-filter="kidney" onclick="setFilter('kidney', this)">腎機能</button>
+        <button class="filter-chip" data-filter="eye" onclick="setFilter('eye', this)">視力</button>
+        <button class="filter-chip" data-filter="fitness" onclick="setFilter('fitness', this)">💪 体力</button>
+      </div>
+      <ul class="record-list" id="recordList">
+        <li class="empty-state"><div class="icon">📋</div>まだ記録がありません</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ======= プロフィールタブ ======= -->
+  <div id="tab-profile" class="tab-panel">
+    <div class="card">
+      <div class="card-title">🧬 基本プロフィール</div>
+      <div class="field-group">
+        <div class="field-wrap">
+          <div class="label-row"><label>身長（固定値）</label><span class="unit">cm</span></div>
+          <input type="number" id="p_height" placeholder="例: 170" step="0.1" oninput="saveProfile()">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>生年月日</label></div>
+          <input type="date" id="p_dob" oninput="saveProfile()">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>性別</label></div>
+          <select id="p_sex" onchange="saveProfile()">
+            <option value="">選択なし</option>
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+          </select>
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>血液型</label></div>
+          <select id="p_blood" onchange="saveProfile()">
+            <option value="">不明</option>
+            <option value="A">A型</option>
+            <option value="B">B型</option>
+            <option value="O">O型</option>
+            <option value="AB">AB型</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group single" style="margin-top:8px;">
+        <div class="field-wrap">
+          <label>持病・既往歴</label>
+          <textarea id="p_conditions" placeholder="例: 高血圧、花粉症..." oninput="saveProfile()" style="min-height:60px;"></textarea>
+        </div>
+      </div>
+      <div class="field-group single">
+        <div class="field-wrap">
+          <label>服用中の薬</label>
+          <textarea id="p_meds" placeholder="例: アムロジピン 5mg、他..." oninput="saveProfile()" style="min-height:60px;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💡 個人の特徴・気づき</div>
+      <p style="font-size:0.8rem;color:var(--text-sub);margin-bottom:12px;line-height:1.6;">アルコールで眠れなくなる、特定の食事で胃がもたれるなど、自分だけの傾向や気づきを記録しておきましょう。</p>
+      <ul class="char-list" id="charList"></ul>
+      <div class="char-add-row">
+        <input type="text" id="charInput" placeholder="例: お酒を飲むと必ず寝付けなくなる" onkeydown="if(event.key==='Enter')addChar()">
+        <button class="btn-add-char" onclick="addChar()">＋ 追加</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👓 メガネ・コンタクト処方</div>
+      <div class="field-group">
+        <div class="field-wrap">
+          <div class="label-row"><label>メガネ 右</label><span class="unit">D</span></div>
+          <input type="number" id="p_glassR" placeholder="-2.50" step="0.25" oninput="saveProfile()">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>メガネ 左</label><span class="unit">D</span></div>
+          <input type="number" id="p_glassL" placeholder="-2.25" step="0.25" oninput="saveProfile()">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>コンタクト 右</label><span class="unit">D</span></div>
+          <input type="number" id="p_contactR" placeholder="-2.00" step="0.25" oninput="saveProfile()">
+        </div>
+        <div class="field-wrap">
+          <div class="label-row"><label>コンタクト 左</label><span class="unit">D</span></div>
+          <input type="number" id="p_contactL" placeholder="-2.00" step="0.25" oninput="saveProfile()">
+        </div>
+      </div>
+      <div class="field-group single" style="margin-top:4px;">
+        <div class="field-wrap">
+          <label>その他眼科メモ（乱視度数など）</label>
+          <textarea id="p_eyeMemo" placeholder="右乱視-0.75/軸180°..." oninput="saveProfile()" style="min-height:56px;"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= バックアップタブ ======= -->
+  <div id="tab-backup" class="tab-panel">
+    <div class="card">
+      <div class="card-title">💾 バックアップ</div>
+      <p class="backup-note">
+        データはブラウザに自動保存されます。<br>
+        キャッシュ削除で消えることがあるため、定期的な保存をおすすめします。
+        <small>※ Chrome/Edge: 任意のフォルダに直接保存できます</small>
+      </p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="btn btn-primary" onclick="exportJSON()">
+          💾 フォルダに保存
+        </button>
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">
+          📁 ファイルから読み込む
+        </button>
+        <input type="file" id="fileInput" accept=".json" onchange="importJSON(event)">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🗑️ データ管理</div>
+      <p style="font-size:0.82rem;color:var(--text-sub);margin-bottom:14px;line-height:1.6;">
+        記録件数: <strong id="recordCount">0</strong> 件
+      </p>
+      <button class="btn btn-danger" onclick="clearAllData()">
+        ⚠️ すべてのデータを削除
+      </button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div id="toast"></div>
+
+<script>
+// ===== DATA KEYS =====
+const STORAGE_KEY = 'healthBook_records';
+const PROFILE_KEY = 'healthBook_profile';
+const TAB_ORDER = ['input', 'records', 'profile', 'backup'];
+
+// Field definitions
+const ALL_FIELDS = {
+  weight:     { label:'体重', unit:'kg', category:'body' },
+  bodyFat:    { label:'体脂肪率', unit:'%', category:'body' },
+  waist:      { label:'ウエスト', unit:'cm', category:'body' },
+  height:     { label:'身長', unit:'cm', category:'body' },
+  bpSys:      { label:'収縮期血圧', unit:'mmHg', category:'blood' },
+  bpDia:      { label:'拡張期血圧', unit:'mmHg', category:'blood' },
+  glucose:    { label:'血糖値', unit:'mg/dL', category:'blood' },
+  hba1c:      { label:'HbA1c', unit:'%', category:'blood' },
+  creatinine: { label:'クレアチニン', unit:'mg/dL', category:'kidney' },
+  egfr:       { label:'eGFR', unit:'mL/分/1.73m²', category:'kidney' },
+  uricAcid:   { label:'尿酸値', unit:'mg/dL', category:'kidney' },
+  bun:        { label:'BUN', unit:'mg/dL', category:'kidney' },
+  cholTotal:  { label:'総コレステロール', unit:'mg/dL', category:'liver' },
+  ldl:        { label:'LDLコレステロール', unit:'mg/dL', category:'liver' },
+  hdl:        { label:'HDLコレステロール', unit:'mg/dL', category:'liver' },
+  trig:       { label:'中性脂肪', unit:'mg/dL', category:'liver' },
+  ast:        { label:'AST', unit:'U/L', category:'liver' },
+  alt:        { label:'ALT', unit:'U/L', category:'liver' },
+  ggtp:       { label:'γ-GTP', unit:'U/L', category:'liver' },
+  visR:       { label:'視力(右)', unit:'', category:'eye' },
+  visL:       { label:'視力(左)', unit:'', category:'eye' },
+  iopR:       { label:'眼圧(右)', unit:'mmHg', category:'eye' },
+  iopL:       { label:'眼圧(左)', unit:'mmHg', category:'eye' },
+  glassR:     { label:'メガネ(右)', unit:'D', category:'eye' },
+  glassL:     { label:'メガネ(左)', unit:'D', category:'eye' },
+  contactR:   { label:'コンタクト(右)', unit:'D', category:'eye' },
+  contactL:   { label:'コンタクト(左)', unit:'D', category:'eye' },
+  gripR:      { label:'握力(右)', unit:'kg', category:'fitness' },
+  gripL:      { label:'握力(左)', unit:'kg', category:'fitness' },
+  vo2max:     { label:'VO2max', unit:'mL/kg/分', category:'fitness' },
+  restHR:     { label:'安静時心拍数', unit:'bpm', category:'fitness' },
+  maxHR:      { label:'最大心拍数', unit:'bpm', category:'fitness' },
+  steps:      { label:'1日平均歩数', unit:'歩', category:'fitness' },
+  sitReach:   { label:'長座体前屈', unit:'cm', category:'fitness' },
+  standJump:  { label:'立ち幅跳び', unit:'cm', category:'fitness' },
+  sitUp:      { label:'上体起こし', unit:'回/30秒', category:'fitness' },
+  sideStep:   { label:'反復横跳び', unit:'回/20秒', category:'fitness' },
+  walk6min:   { label:'6分間歩行', unit:'m', category:'fitness' },
+  rbc:        { label:'赤血球数', unit:'万/μL', category:'other' },
+  wbc:        { label:'白血球数', unit:'/μL', category:'other' },
+  hgb:        { label:'ヘモグロビン', unit:'g/dL', category:'other' },
+  plt:        { label:'血小板数', unit:'万/μL', category:'other' },
+  tsh:        { label:'TSH', unit:'μIU/mL', category:'other' },
+  ferritin:   { label:'フェリチン', unit:'ng/mL', category:'other' },
+  vitD:       { label:'ビタミンD', unit:'ng/mL', category:'other' },
+  crp:        { label:'CRP', unit:'mg/dL', category:'other' },
+};
+
+const FILTER_CATS = {
+  all: null,
+  body: ['body'],
+  blood: ['blood'],
+  kidney: ['kidney'],
+  liver: ['liver'],
+  eye: ['eye'],
+  fitness: ['fitness'],
+};
+
+let records = [];
+let profile = { chars: [] };
+let currentFilter = 'all';
+let chartInstance = null;
+let fitCustomItems = []; // [{name, value, unit}] for current entry
+
+// ===== INIT =====
+function init() {
+  // Set default datetime
+  const now = new Date();
+  now.setSeconds(0, 0);
+  document.getElementById('inputDate').value = now.toISOString().slice(0, 16);
+
+  // Load data
+  try {
+    const r = localStorage.getItem(STORAGE_KEY);
+    if (r) records = JSON.parse(r);
+  } catch(e) { records = []; }
+  try {
+    const p = localStorage.getItem(PROFILE_KEY);
+    if (p) profile = JSON.parse(p);
+    if (!profile.chars) profile.chars = [];
+  } catch(e) { profile = { chars: [] }; }
+
+  loadProfileUI();
+  populateChartSelect();
+  renderRecords();
+  updateRecordCount();
+}
+
+// ===== TABS =====
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const idx = TAB_ORDER.indexOf(name);
+  if (idx >= 0) document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (name === 'records') {
+    populateChartSelect();
+    renderChart();
+    renderRecords();
+  }
+  if (name === 'backup') updateRecordCount();
+}
+
+// ===== SECTION TOGGLE =====
+function toggleSection(id) {
+  const body = document.getElementById('sec-' + id);
+  const arr = document.getElementById('arr-' + id);
+  body.classList.toggle('open');
+  arr.classList.toggle('open');
+}
+
+// ===== FITNESS CUSTOM =====
+function addFitCustom() {
+  const name = document.getElementById('fitCustomName').value.trim();
+  const val  = document.getElementById('fitCustomVal').value.trim();
+  const unit = document.getElementById('fitCustomUnit').value.trim();
+  if (!name || !val) { showToast('⚠️ 項目名と値を入力してください'); return; }
+  fitCustomItems.push({ name, value: parseFloat(val), unit });
+  document.getElementById('fitCustomName').value = '';
+  document.getElementById('fitCustomVal').value = '';
+  document.getElementById('fitCustomUnit').value = '';
+  renderFitCustomList();
+}
+
+function removeFitCustom(i) {
+  fitCustomItems.splice(i, 1);
+  renderFitCustomList();
+}
+
+function renderFitCustomList() {
+  const el = document.getElementById('fitCustomList');
+  el.innerHTML = fitCustomItems.map((it, i) =>
+    `<div class="fit-custom-item">
+      <span class="fck">💪 ${it.name}</span>
+      <span class="fcv">${it.value}${it.unit ? ' '+it.unit : ''}</span>
+      <button onclick="removeFitCustom(${i})">✕</button>
+    </div>`
+  ).join('');
+}
+
+// ===== SAVE RECORD =====
+function saveRecord() {
+  const dt = document.getElementById('inputDate').value;
+  if (!dt) { showToast('⚠️ 日時を入力してください'); return; }
+
+  const rec = { id: Date.now(), date: dt, values: {}, memo: '' };
+  let hasValue = false;
+
+  for (const key of Object.keys(ALL_FIELDS)) {
+    const el = document.getElementById('f_' + key);
+    if (el && el.value !== '') {
+      rec.values[key] = parseFloat(el.value);
+      hasValue = true;
+    }
+  }
+
+  // Custom
+  const custom = document.getElementById('f_custom').value.trim();
+  if (custom) { rec.values._custom = custom; hasValue = true; }
+
+  // Fitness custom items
+  if (fitCustomItems.length > 0) {
+    rec.values._fitCustom = JSON.parse(JSON.stringify(fitCustomItems));
+    hasValue = true;
+  }
+
+  const memo = document.getElementById('f_memo').value.trim();
+  if (memo) rec.memo = memo;
+
+  if (!hasValue && !memo) {
+    showToast('⚠️ 少なくとも1項目を入力してください');
+    return;
+  }
+
+  records.unshift(rec);
+  persist();
+  clearInputForm();
+  showToast('✅ 記録を保存しました');
+}
+
+function clearInputForm() {
+  for (const key of Object.keys(ALL_FIELDS)) {
+    const el = document.getElementById('f_' + key);
+    if (el) el.value = '';
+  }
+  document.getElementById('f_custom').value = '';
+  document.getElementById('f_memo').value = '';
+  fitCustomItems = [];
+  renderFitCustomList();
+}
+
+// ===== RENDER RECORDS =====
+function renderRecords() {
+  const list = document.getElementById('recordList');
+  const filtered = filterRecords(records, currentFilter);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<li class="empty-state"><div class="icon">📋</div>記録がありません</li>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(rec => {
+    const d = new Date(rec.date);
+    const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+    const valueTags = Object.entries(rec.values)
+      .filter(([k]) => k !== '_custom')
+      .map(([k, v]) => {
+        const def = ALL_FIELDS[k];
+        if (!def) return '';
+        return `<span class="value-tag"><span class="vk">${def.label}</span> <span class="vv">${v}${def.unit ? ' '+def.unit : ''}</span></span>`;
+      }).join('');
+
+    const customTag = rec.values._custom ?
+      `<span class="value-tag"><span class="vk">カスタム</span> <span class="vv">${rec.values._custom}</span></span>` : '';
+
+    const fitCustomTags = (rec.values._fitCustom || []).map(it =>
+      `<span class="value-tag"><span class="vk">💪${it.name}</span> <span class="vv">${it.value}${it.unit ? ' '+it.unit : ''}</span></span>`
+    ).join('');
+
+    const memoEl = rec.memo ?
+      `<div class="record-item-note">📝 ${rec.memo}</div>` : '';
+
+    return `<li class="record-item">
+      <div class="record-item-date">📅 ${dateStr}</div>
+      <div class="record-item-values">${valueTags}${customTag}${fitCustomTags}</div>
+      ${memoEl}
+      <button class="record-delete" onclick="deleteRecord(${rec.id})" title="削除">✕</button>
+    </li>`;
+  }).join('');
+}
+
+function filterRecords(recs, filter) {
+  if (filter === 'all') return recs;
+  const cats = FILTER_CATS[filter];
+  if (!cats) return recs;
+  return recs.filter(r => {
+    const hasKnown = Object.keys(r.values).some(k => {
+      const def = ALL_FIELDS[k];
+      return def && cats.includes(def.category);
+    });
+    // Also include records with custom fitness items when filtering fitness
+    const hasFitCustom = cats.includes('fitness') && r.values._fitCustom && r.values._fitCustom.length > 0;
+    return hasKnown || hasFitCustom;
+  });
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderRecords();
+}
+
+function deleteRecord(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  records = records.filter(r => r.id !== id);
+  persist();
+  renderRecords();
+  renderChart();
+  updateRecordCount();
+  showToast('🗑️ 削除しました');
+}
+
+// ===== CHART =====
+function populateChartSelect() {
+  const sel = document.getElementById('chartFieldSelect');
+  const prev = sel.value;
+
+  // Find fields that have data
+  const available = new Set();
+  records.forEach(r => Object.keys(r.values).forEach(k => { if (k !== '_custom') available.add(k); }));
+
+  sel.innerHTML = '';
+  if (available.size === 0) {
+    sel.innerHTML = '<option value="">データなし</option>';
+    return;
+  }
+
+  for (const [key, def] of Object.entries(ALL_FIELDS)) {
+    if (available.has(key)) {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `${def.label}（${def.unit}）`;
+      sel.appendChild(opt);
+    }
+  }
+  if (prev && available.has(prev)) sel.value = prev;
+}
+
+function renderChart() {
+  const area = document.getElementById('chartArea');
+  const sel = document.getElementById('chartFieldSelect');
+  const field = sel.value;
+
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  if (!field || records.length === 0) {
+    area.innerHTML = `<div class="no-chart">データを登録するとグラフが表示されます</div>`;
+    return;
+  }
+
+  const pts = records
+    .filter(r => r.values[field] !== undefined)
+    .map(r => ({ x: r.date, y: r.values[field] }))
+    .sort((a, b) => a.x.localeCompare(b.x));
+
+  if (pts.length === 0) {
+    area.innerHTML = `<div class="no-chart">この項目のデータがありません</div>`;
+    return;
+  }
+
+  area.innerHTML = `<div class="chart-wrap"><canvas id="mainChart"></canvas></div>`;
+  const ctx = document.getElementById('mainChart').getContext('2d');
+  const def = ALL_FIELDS[field];
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: pts.map(p => {
+        const d = new Date(p.x);
+        return `${d.getMonth()+1}/${d.getDate()}`;
+      }),
+      datasets: [{
+        label: `${def.label}（${def.unit}）`,
+        data: pts.map(p => p.y),
+        borderColor: '#7aa2e3',
+        backgroundColor: 'rgba(122,162,227,0.1)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#7aa2e3',
+        pointRadius: 5,
+        tension: 0.35,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { font: { family: 'Noto Sans JP', size: 11 }, color: '#3a4a6b' } },
+        tooltip: { bodyFont: { family: 'Noto Sans JP' } }
+      },
+      scales: {
+        x: { ticks: { font: { family: 'Noto Sans JP', size: 10 }, color: '#7b8faf' }, grid: { color: '#eef2ff' } },
+        y: { ticks: { font: { family: 'Noto Sans JP', size: 10 }, color: '#7b8faf' }, grid: { color: '#eef2ff' } }
+      }
+    }
+  });
+}
+
+// ===== PROFILE =====
+function loadProfileUI() {
+  const f = ['height','dob','sex','blood','conditions','meds','glassR','glassL','contactR','contactL','eyeMemo'];
+  f.forEach(k => {
+    const el = document.getElementById('p_' + k);
+    if (el && profile[k] !== undefined) el.value = profile[k];
+  });
+  renderChars();
+}
+
+function saveProfile() {
+  const f = ['height','dob','sex','blood','conditions','meds','glassR','glassL','contactR','contactL','eyeMemo'];
+  f.forEach(k => {
+    const el = document.getElementById('p_' + k);
+    if (el) profile[k] = el.value;
+  });
+  persistProfile();
+}
+
+function addChar() {
+  const inp = document.getElementById('charInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  profile.chars.push(txt);
+  inp.value = '';
+  renderChars();
+  persistProfile();
+}
+
+function removeChar(i) {
+  profile.chars.splice(i, 1);
+  renderChars();
+  persistProfile();
+}
+
+function renderChars() {
+  const list = document.getElementById('charList');
+  if (!profile.chars || profile.chars.length === 0) {
+    list.innerHTML = `<li style="font-size:0.8rem;color:var(--text-light);padding:6px 0;">まだ登録されていません</li>`;
+    return;
+  }
+  list.innerHTML = profile.chars.map((c, i) =>
+    `<li class="char-item">
+      <span class="char-text">💡 ${c}</span>
+      <button class="char-remove" onclick="removeChar(${i})">✕</button>
+    </li>`
+  ).join('');
+}
+
+// ===== BACKUP =====
+function exportJSON() {
+  const data = { records, profile, exportedAt: new Date().toISOString(), version: 1 };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `健康手帳_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('💾 保存しました');
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data.records)) throw new Error('invalid');
+      if (!confirm(`${data.records.length}件の記録を読み込みます。現在のデータは上書きされます。よろしいですか？`)) return;
+      records = data.records;
+      if (data.profile) { profile = data.profile; if (!profile.chars) profile.chars = []; }
+      persist();
+      persistProfile();
+      loadProfileUI();
+      populateChartSelect();
+      renderRecords();
+      renderChart();
+      updateRecordCount();
+      showToast(`✅ ${records.length}件を読み込みました`);
+    } catch(err) {
+      showToast('⚠️ ファイルの形式が正しくありません');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearAllData() {
+  if (!confirm('すべての記録とプロフィールを削除します。この操作は元に戻せません。本当によろしいですか？')) return;
+  records = [];
+  profile = { chars: [] };
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(PROFILE_KEY);
+  loadProfileUI();
+  populateChartSelect();
+  renderRecords();
+  renderChart();
+  updateRecordCount();
+  showToast('🗑️ データを削除しました');
+}
+
+function updateRecordCount() {
+  document.getElementById('recordCount').textContent = records.length;
+}
+
+// ===== PERSIST =====
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); } catch(e) {}
+}
+function persistProfile() {
+  try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch(e) {}
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Start
+init();
+setupPWA();
+setupSwipe();
+
+// ===== PWA =====
+function setupPWA() {
+  // Generate icon via canvas
+  function makeIcon(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    // Background gradient
+    const g = ctx.createLinearGradient(0, 0, size, size);
+    g.addColorStop(0, '#c8daf8');
+    g.addColorStop(1, '#e8d8f8');
+    ctx.fillStyle = g;
+    const r = size * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(r, 0);
+    ctx.lineTo(size - r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size - r);
+    ctx.quadraticCurveTo(size, size, size - r, size);
+    ctx.lineTo(r, size);
+    ctx.quadraticCurveTo(0, size, 0, size - r);
+    ctx.lineTo(0, r);
+    ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fill();
+    // Emoji 🌿
+    ctx.font = `${size * 0.55}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🌿', size / 2, size / 2 + size * 0.03);
+    return c.toDataURL('image/png');
+  }
+
+  const icon192 = makeIcon(192);
+  const icon512 = makeIcon(512);
+
+  // Apple touch icon
+  document.getElementById('appleIcon').href = makeIcon(180);
+
+  // Manifest
+  const manifest = {
+    name: 'わたしの健康手帳',
+    short_name: '健康手帳',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#f0f4ff',
+    theme_color: '#e8f0ff',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png' },
+      { src: icon512, sizes: '512x512', type: 'image/png' },
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+  document.getElementById('manifestLink').href = URL.createObjectURL(blob);
+
+  // Service Worker (cache-first for offline)
+  if ('serviceWorker' in navigator) {
+    const sw = `
+      const CACHE = 'health-book-v1';
+      self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(['.']))));
+      self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+    `;
+    const swBlob = new Blob([sw], { type: 'application/javascript' });
+    navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+  }
+}
+
+// ===== SWIPE TABS =====
+function setupSwipe() {
+  let startX = 0, startY = 0, moved = false;
+  const main = document.querySelector('.main');
+
+  document.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    moved = false;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    moved = true;
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!moved) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    // Only horizontal swipes (dx > dy * 1.5 and at least 60px)
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    const currentTab = TAB_ORDER.find(t =>
+      document.getElementById('tab-' + t).classList.contains('active')
+    );
+    const idx = TAB_ORDER.indexOf(currentTab);
+    let next = idx;
+    if (dx < 0 && idx < TAB_ORDER.length - 1) next = idx + 1; // swipe left → next
+    if (dx > 0 && idx > 0) next = idx - 1;                    // swipe right → prev
+    if (next === idx) return;
+
+    // Find matching tab button and click it
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs[next].click();
+    // Visual feedback: brief flash on tab bar
+    tabs[next].style.transform = 'scale(1.12)';
+    setTimeout(() => tabs[next].style.transform = '', 180);
+  }, { passive: true });
+}
+</script>
+</body>
+</html>
